@@ -39,6 +39,11 @@ router.get('/:guid', function(req, res) {
             }
             var fieldTypeName = findEnumNameWhereId('FIELD_TYPE', ff.fields.field_type_id);
             ff.fields['is' + fieldTypeName] = true;
+            if(ff.fields.field_options) {
+              ff.fields.field_options.sort(function(a, b) {
+                return a.display_order > b.display_order;
+              });
+            }
           });
         });
       });

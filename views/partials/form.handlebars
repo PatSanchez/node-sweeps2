@@ -1,0 +1,34 @@
+{{#each form_field_groups}}
+    {{#each form_fields}}
+        {{#if fields.isSelectSingle}}
+            {{>form-fields/select-single}}
+        {{/if}}
+        {{#if fields.isRadioButtons}}
+            {{>form-fields/radio-buttons}}
+        {{/if}}
+        {{#if fields.isTextbox}}
+            {{>form-fields/textbox}}
+        {{/if}}
+        {{#if fields.isTextarea}}
+            {{>form-fields/textarea}}
+        {{/if}}
+        {{#if fields.isCustomDateInput}}
+            {{>form-fields/custom-date-input}}
+        {{/if}}
+        {{#if fields.isDisplayText}}
+            {{>form-fields/display-text}}
+        {{/if}}
+        {{#if fields.isSingleCheckbox}}
+            {{>form-fields/single-checkbox}}
+        {{/if}}
+        {{#if fields.isNumberInput}}
+            {{>form-fields/number-input}}
+        {{/if}}
+        {{#if fields.isEmailTextbox}}
+            {{>form-fields/email-textbox}}
+        {{/if}}
+        {{#if fields.isCodeword}}
+            {{>form-fields/codeword}}
+        {{/if}}
+    {{/each}}
+{{/each}}
