@@ -7,11 +7,6 @@ var findEnumNameWhereId = require('../utils/enums');
 
 var client = rest.wrap(mime);
 
-/* GET home page. */
-router.get('/', function(req, res) {
-  res.render('index', { title: 'Express' });
-});
-
 router.get('/:guid', function(req, res) {
   client( {path: 'https://api.secondstreetapp.com/promotion_contents?organizationPromotionUniqueId=' + req.params.guid, headers: headers})
     .then(function(response) {
@@ -29,8 +24,16 @@ router.get('/:guid', function(req, res) {
     .then(function(response) {
       var forms = response.entity.forms;
       forms.forEach(function(form){
+        form.form_field_groups.sort(function(a, b) {
+          return a.display_order > b.display_order;
+        });
         form.form_field_groups.forEach(function(ffg) {
+          ffg.form_fields.sort(function(a, b) {
+            return a.display_order > b.display_order;
+          });
           ffg.form_fields.forEach(function(ff) {
+
+            //Sometimes form fields don't have labels so use the field name instead
             if(!ff.label_text) {
               ff.label_text = ff.fields.name;
             }
