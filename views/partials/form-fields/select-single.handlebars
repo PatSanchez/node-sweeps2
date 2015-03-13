@@ -1,10 +1,10 @@
 <div class="row">
     <div class="col s12">
         <label>{{label_text}}</label>
-        <select id="{{id}}">
+        <select name="{{fields.id}}" id="{{fields.id}}">
             <option value="" selected disabled>Select One</option>
             {{#each fields.field_options}}
-                <option value="{{name}}">{{text}}</option>
+                <option value="{{id}}">{{text}}</option>
             {{/each}}
         </select>
     </div>

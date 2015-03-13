@@ -7,7 +7,13 @@ var findEnumNameWhereId = require('../utils/enums');
 
 var client = rest.wrap(mime);
 
-router.get('/:guid', function(req, res) {
+//TODO: Make work.
+function findCurrentMatchup(matchups) {
+  return matchups[0];
+}
+
+router.get('/sweeps/:guid', function(req, res) {
+  var currentMatchupId;
   client( {path: 'https://api.secondstreetapp.com/promotion_contents?organizationPromotionUniqueId=' + req.params.guid, headers: headers})
     .then(function(response) {
       if (response.status.code === 200) {
@@ -15,15 +21,21 @@ router.get('/:guid', function(req, res) {
         headers['X-Organization-Id'] = pc.organization_id;
         headers['X-Organization-Promotion-Id'] = pc.organization_promotion_id;
         headers['X-Promotion-Id'] = pc.promotion_id;
-        return client( {path: 'https://api.secondstreetapp.com/forms?sideloadSubObjects=false', headers: headers});
+        return client( {path: 'https://api.secondstreetapp.com/matchups', headers: headers});
       }
       else {
         throw new Error('Promotion not found')
       }
     })
     .then(function(response) {
+      var matchups = response.entity.matchups;
+      currentMatchupId = findCurrentMatchup(matchups).id;
+      return client( {path: 'https://api.secondstreetapp.com/forms?sideloadSubObjects=false', headers: headers});
+    })
+    .then(function(response) {
       var forms = response.entity.forms;
       forms.forEach(function(form){
+        form.expected_fields = [];
         form.form_field_groups.sort(function(a, b) {
           return a.display_order > b.display_order;
         });
@@ -39,6 +51,12 @@ router.get('/:guid', function(req, res) {
             }
             var fieldTypeName = findEnumNameWhereId('FIELD_TYPE', ff.fields.field_type_id);
             ff.fields['is' + fieldTypeName] = true;
+            form.expected_fields.push(
+              {
+                id: ff.fields.id,
+                type: fieldTypeName
+              }
+            );
             if(ff.fields.field_options) {
               ff.fields.field_options.sort(function(a, b) {
                 return a.display_order > b.display_order;
@@ -46,16 +64,36 @@ router.get('/:guid', function(req, res) {
             }
           });
         });
+        form.expected_fields = JSON.stringify(form.expected_fields);
       });
       var registrationForm = forms.filter(function(form){ return form.form_type_id === 1})[0];
       var entryForm = forms.filter(function(form){ return form.form_type_id === 2})[0];
-      res.render('enter', { registration_form: registrationForm, entry_form: entryForm });
+      res.render('enter', { registration_form: registrationForm, entry_form: entryForm, guid: req.params.guid, current_matchup_id: currentMatchupId });
     })
     .catch(function(error) {
       res.render('error', { message: 'Not Found', error: error });
     })
   ;
 
+});
+
+router.post('/form_submission', function(req, res) {
+  console.log(req.body);
+  var formSubmission = {
+    form_submissions: [
+      {
+        referrer: null,
+        fields: [],
+        matchup_id: null,
+        form_id: null
+      }
+    ]
+  };
+  res.redirect('/sweeps/' + req.query.guid + '/thanks')
+});
+
+router.get('/sweeps/:guid/thanks', function(req, res) {
+  res.render('thanks');
 });
 
 module.exports = router;

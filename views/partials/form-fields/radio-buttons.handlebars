@@ -1,11 +1,14 @@
 <div class="row">
     <div class="col s12">
         <label class="radio-label">{{label_text}}</label>
-        {{#each fields.field_options}}
-            <p>
-                <input name="{{../id}}" type="radio" id="{{id}}" value="{{name}}" class="with-gap" />
-                <label for="{{id}}">{{text}}</label>
-            </p>
-        {{/each}}
+        {{#with fields}}
+            {{#each field_options}}
+                <p>
+                    <input name="{{../id}}" type="radio" id="{{id}}" value="{{id}}" class="with-gap" />
+                    <label for="{{id}}">{{text}}</label>
+                </p>
+            {{/each}}
+        {{/with}}
+
     </div>
 </div>

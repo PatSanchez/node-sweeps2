@@ -1,8 +1,14 @@
-<form class="sweepstakes-form">
+<form action="/form_submission?guid={{guid}}" class="sweepstakes-form">
     {{#with entry_form}}
         {{>form}}
     {{/with}}
     {{#with registration_form}}
         {{>form}}
     {{/with}}
+    <input type="hidden" name="entry_form_id" id="entry_form_id" value="{{entry_form.id}}"/>
+    <input type="hidden" name="registration_form_id" id="registration_form_id" value="{{registration_form.id}}"/>
+    <input type="hidden" name="current_matchup_id" id="current_matchup_id" value="{{current_matchup_id}}"/>
+    <button class="btn waves-effect waves-light" type="submit" formmethod="post">Submit
+        <i class="mdi-content-send right"></i>
+    </button>
 </form>
