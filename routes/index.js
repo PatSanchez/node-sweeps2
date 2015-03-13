@@ -13,24 +13,26 @@ function findCurrentMatchup(matchups) {
 }
 
 router.get('/sweeps/:guid', function(req, res) {
-  var currentMatchupId;
+  var currentMatchupId, newHeaders;
   client( {path: 'https://api.secondstreetapp.com/promotion_contents?organizationPromotionUniqueId=' + req.params.guid, headers: headers})
     .then(function(response) {
       if (response.status.code === 200) {
         const pc = response.entity.promotion_contents[0];
-        headers['X-Organization-Id'] = pc.organization_id;
-        headers['X-Organization-Promotion-Id'] = pc.organization_promotion_id;
-        headers['X-Promotion-Id'] = pc.promotion_id;
-        return client( {path: 'https://api.secondstreetapp.com/matchups', headers: headers});
+        newHeaders = JSON.parse(JSON.stringify(headers));
+        newHeaders['X-Organization-Id'] = pc.organization_id;
+        newHeaders['X-Organization-Promotion-Id'] = pc.organization_promotion_id;
+        newHeaders['X-Promotion-Id'] = pc.promotion_id;
+        return client( {path: 'https://api.secondstreetapp.com/matchups', headers: newHeaders});
       }
       else {
         throw new Error('Promotion not found')
       }
     })
+    //TODO: This doesn't need to run before forms. Should find out if this library supports eq to RSVP.all
     .then(function(response) {
       var matchups = response.entity.matchups;
       currentMatchupId = findCurrentMatchup(matchups).id;
-      return client( {path: 'https://api.secondstreetapp.com/forms?sideloadSubObjects=false', headers: headers});
+      return client( {path: 'https://api.secondstreetapp.com/forms?sideloadSubObjects=false', headers: newHeaders});
     })
     .then(function(response) {
       var forms = response.entity.forms;
@@ -68,7 +70,15 @@ router.get('/sweeps/:guid', function(req, res) {
       });
       var registrationForm = forms.filter(function(form){ return form.form_type_id === 1})[0];
       var entryForm = forms.filter(function(form){ return form.form_type_id === 2})[0];
-      res.render('enter', { registration_form: registrationForm, entry_form: entryForm, guid: req.params.guid, current_matchup_id: currentMatchupId });
+      res.render('enter', {
+        registration_form: registrationForm,
+        entry_form: entryForm,
+        guid: req.params.guid,
+        current_matchup_id: currentMatchupId,
+        organization_id: newHeaders['X-Organization-Id'],
+        organization_promotion_id: newHeaders['X-Organization-Promotion-Id'],
+        promotion_id: newHeaders['X-Promotion-Id']
+      });
     })
     .catch(function(error) {
       res.render('error', { message: 'Not Found', error: error });
@@ -79,17 +89,33 @@ router.get('/sweeps/:guid', function(req, res) {
 
 router.post('/form_submission', function(req, res) {
   console.log(req.body);
-  var formSubmission = {
+  var entryFormId = req.body.entry_form_id;
+  var entryFields = JSON.parse(req.body['form_' + entryFormId]);
+  var entryFormSubmission = {
     form_submissions: [
       {
         referrer: null,
-        fields: [],
-        matchup_id: null,
-        form_id: null
+        fields: entryFields.map(function(field) {
+          return {
+            id: field.id,
+            field_value: req.body[field.id]
+          }
+        }),
+        matchup_id: req.body.current_matchup_id,
+        form_id: entryFormId
       }
     ]
   };
-  res.redirect('/sweeps/' + req.query.guid + '/thanks')
+  var newHeaders = JSON.parse(JSON.stringify(headers));
+  newHeaders['X-Organization-Id'] = req.body.organization_id;
+  newHeaders['X-Organization-Promotion-Id'] = req.body.organization_promotion_id;
+  newHeaders['X-Promotion-Id'] = req.body.promotion_id;
+  client( {path: 'https://api.secondstreetapp.com/form_submissions', method: 'POST', headers: newHeaders, entity: entryFormSubmission})
+    .then(function(response) {
+      console.log(response.entity.server_errors);
+      res.redirect('/sweeps/' + req.query.guid + '/thanks')
+    });
+
 });
 
 router.get('/sweeps/:guid/thanks', function(req, res) {
